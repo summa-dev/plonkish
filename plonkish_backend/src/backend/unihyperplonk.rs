@@ -120,7 +120,7 @@ where
         circuit: &impl PlonkishCircuit<F>,
         transcript: &mut impl TranscriptWrite<Pcs::CommitmentChunk, F>,
         _: impl RngCore,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<UnivariatePolynomial<F>>, Error> {
         let instance_polys = {
             let instances = circuit.instances();
             for (num_instances, instances) in pp.num_instances.iter().zip_eq(instances) {
@@ -258,7 +258,8 @@ where
         )?;
         end_timer(timer);
 
-        Ok(())
+        //TODO should we return the polynomial?
+        Ok(vec![])
     }
 
     fn verify(
