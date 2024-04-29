@@ -157,7 +157,15 @@ where
             witness_polys.extend(polys);
             challenges.extend(transcript.squeeze_challenges(*num_challenges));
         }
-        let polys = chain![
+
+        let witness_polys_return = witness_polys
+            .clone()
+            .into_iter()
+            .map(|poly| poly.into_evals())
+            .map(UnivariatePolynomial::lagrange)
+            .collect_vec();
+
+        let polys: Vec<Cow<'_, MultilinearPolynomial<F>>> = chain![
             instance_polys.into_iter().map(Cow::Owned),
             pp.preprocess_polys.iter().map(Cow::Borrowed),
             witness_polys.into_iter().map(Cow::Owned)
@@ -258,8 +266,7 @@ where
         )?;
         end_timer(timer);
 
-        //TODO should we return the polynomial?
-        Ok(vec![])
+        Ok(witness_polys_return)
     }
 
     fn verify(
