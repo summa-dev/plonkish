@@ -35,7 +35,7 @@ pub trait PlonkishBackend<F: Field>: Clone + Debug {
         circuit: &impl PlonkishCircuit<F>,
         transcript: &mut impl TranscriptWrite<CommitmentChunk<F, Self::Pcs>, F>,
         rng: impl RngCore,
-    ) -> Result<(), Error>;
+    ) -> Result<Vec<<Self::Pcs as PolynomialCommitmentScheme<F>>::Polynomial>, Error>;
 
     fn verify(
         vp: &Self::VerifierParam,
