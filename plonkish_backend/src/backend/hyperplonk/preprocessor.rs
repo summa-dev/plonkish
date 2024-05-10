@@ -130,10 +130,41 @@ pub(crate) fn compose<F: PrimeField>(
             permutation_constraints.iter(),
         ]
         .collect_vec();
+
+        //Separate "nonzero" constraints that only contain a single term of a polynomial, e.g., "p_2_0",
+        //and don't contain any arithmetic operations, e.g., "+", "-", "*"
+        let (valid_constraints, mut nonzero_constraints): (
+            Vec<&Expression<F>>,
+            Vec<&Expression<F>>,
+        ) = constraints
+            .iter()
+            .fold((vec![], vec![]), |(mut valid, mut non_zero), expr| {
+                if expr.identifier().contains('+')
+                    || expr.identifier().contains('-')
+                    || expr.identifier().contains('*')
+                {
+                    valid.push(expr);
+                } else {
+                    non_zero.push(expr);
+                }
+                (valid, non_zero)
+            });
+        // For compatibility with distribute_power there should be at least one expression
+        let zero_expression = Expression::zero();
+        if nonzero_constraints.is_empty() {
+            nonzero_constraints.push(&zero_expression);
+        }
+
         let eq = Expression::eq_xy(0);
-        let zero_check_on_every_row = Expression::distribute_powers(constraints, alpha) * eq;
+
+        let nonzero_expression = Expression::distribute_powers(nonzero_constraints, alpha); //nonzero_constraints.into_iter().sum::<Expression<_>>();
+        let zero_check_on_every_row = Expression::distribute_powers(valid_constraints, alpha) * eq;
         Expression::distribute_powers(
-            chain![lookup_zero_checks.iter(), [&zero_check_on_every_row]],
+            chain![
+                [&nonzero_expression],
+                lookup_zero_checks.iter(),
+                [&zero_check_on_every_row]
+            ],
             alpha,
         )
     };
