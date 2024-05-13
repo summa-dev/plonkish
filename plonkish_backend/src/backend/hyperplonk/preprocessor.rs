@@ -157,7 +157,12 @@ pub(crate) fn compose<F: PrimeField>(
 
         let eq = Expression::eq_xy(0);
 
-        let nonzero_expression = Expression::distribute_powers(nonzero_constraints, alpha); //nonzero_constraints.into_iter().sum::<Expression<_>>();
+        let nonzero_expression = if nonzero_constraints.len() > 1 {
+            nonzero_constraints.into_iter().sum::<Expression<_>>()
+        } else {
+            nonzero_constraints[0].clone()
+        };
+
         let zero_check_on_every_row = Expression::distribute_powers(valid_constraints, alpha) * eq;
         Expression::distribute_powers(
             chain![
