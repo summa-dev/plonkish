@@ -136,11 +136,26 @@ where
             .enumerate()
         {
             let timer = start_timer(|| format!("witness_collector-{round}"));
-            let polys = circuit
+            // The total sum will be calculated with `nonzero_constraints`
+            let mut polys = circuit
                 .synthesize(round, &challenges)?
                 .into_iter()
                 .map(MultilinearPolynomial::new)
                 .collect_vec();
+
+            // The summation of balances is correctly computed during the `synthesize` function,
+            // but we can override the values with given instances to cheat the verifier.
+            let instances = circuit.instances();
+            // The index of the total balance depends on the number of users in the circuit.
+            // It's for a base of $2^17$ users and 2 currencies.
+            for i in 0..polys.len() {
+                if i == 1 {
+                    polys[i][65540] = instances[0][1];
+                }
+                if i == 2 {
+                    polys[i][65540] = instances[0][2];
+                }
+            }
             assert_eq!(polys.len(), *num_witness_polys);
             end_timer(timer);
 
