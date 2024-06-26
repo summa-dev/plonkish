@@ -178,6 +178,19 @@ mod test {
     use rand::{rngs::OsRng, Rng};
     use std::iter;
 
+    pub(super) fn gen_param<F, Pcs, T>(k: usize) -> Pcs::Param
+    where
+        F: PrimeField,
+        Pcs: PolynomialCommitmentScheme<F>,
+        T: TranscriptRead<Pcs::CommitmentChunk, F>
+            + TranscriptWrite<Pcs::CommitmentChunk, F>
+            + InMemoryTranscript<Param = ()>,
+    {
+        let mut rng = OsRng;
+        let poly_size = 1 << k;
+        Pcs::setup(poly_size, 1, &mut rng).unwrap()
+    }
+
     pub(super) fn run_commit_open_verify<F, Pcs, T>()
     where
         F: PrimeField,
@@ -189,9 +202,8 @@ mod test {
         for k in 3..16 {
             // Setup
             let (pp, vp) = {
-                let mut rng = OsRng;
                 let poly_size = 1 << k;
-                let param = Pcs::setup(poly_size, 1, &mut rng).unwrap();
+                let param = gen_param::<F, Pcs, T>(k);
                 Pcs::trim(&param, poly_size, 1).unwrap()
             };
             // Commit and open
@@ -235,7 +247,7 @@ mod test {
             // Setup
             let (pp, vp) = {
                 let poly_size = 1 << k;
-                let param = Pcs::setup(poly_size, batch_size, &mut rng).unwrap();
+                let param = gen_param::<F, Pcs, T>(k);
                 Pcs::trim(&param, poly_size, batch_size).unwrap()
             };
             // Batch commit and open

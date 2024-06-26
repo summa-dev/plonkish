@@ -16,8 +16,9 @@ use crate::{
     },
     Error,
 };
+use halo2_curves::serde::SerdeObject;
 use rand::RngCore;
-use std::{iter, marker::PhantomData, ops::Neg, slice};
+use std::{io, iter, marker::PhantomData, ops::Neg, slice};
 
 #[derive(Clone, Debug)]
 pub struct MultilinearKzg<M: MultiMillerLoop>(PhantomData<M>);
@@ -49,6 +50,48 @@ impl<M: MultiMillerLoop> MultilinearKzgParam<M> {
 
     pub fn ss(&self) -> &[M::G2Affine] {
         &self.ss
+    }
+
+    pub fn read_custom<R: io::Read>(reader: &mut R) -> Self
+    where
+        M::G1Affine: SerdeObject,
+        M::G2Affine: SerdeObject,
+    {
+        let mut k = [0u8; 4];
+        let _ = reader.read_exact(&mut k[..]);
+
+        let k = u32::from_le_bytes(k);
+
+        let g1 = M::G1Affine::generator();
+
+        let eqs = {
+            // first g1[0] is generator point
+            let mut eqs = (0..(1 << (k + 1)))
+                .map(|_| M::G1Affine::read_raw(reader))
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap();
+
+            // Reshape eqs into a tree
+            let eqs = &mut eqs.drain(..);
+
+            (0..(k + 1))
+                .map(move |idx| eqs.take(1 << idx).collect_vec())
+                .collect_vec()
+        };
+
+        let g2 = M::G2Affine::read_raw(reader).unwrap();
+
+        let ss = (0..k)
+            .map(|_| M::G2Affine::read_raw(reader))
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        Self {
+            g1,
+            eqs,
+            g2,
+            ss,
+        }
     }
 }
 
@@ -213,7 +256,7 @@ where
             batch_projective_to_affine(&fixed_base_msm(window_size, &window_table, &ss))
         };
 
-        Ok(Self::Param { g1, eqs, g2, ss })
+       Ok(Self::Param { g1, eqs, g2, ss })
     }
 
     fn trim(
@@ -366,13 +409,29 @@ mod test {
     use crate::{
         pcs::{
             multilinear::kzg::MultilinearKzg,
-            test::{run_batch_commit_open_verify, run_commit_open_verify},
+            test::{run_batch_commit_open_verify, run_commit_open_verify, gen_param},
         },
         util::transcript::Keccak256Transcript,
     };
     use halo2_curves::bn256::Bn256;
 
+    use super::MultilinearKzgParam;
+
     type Pcs = MultilinearKzg<Bn256>;
+
+    #[test]
+    fn setup_custom() {
+        // `hermez-raw-extended-11` is generated from https://github.com/sifnoc/halo2-kzg-srs
+        let mut reader = std::fs::File::open("../ptau/hermez-raw-extended-11").unwrap();
+
+        let params_from_file = MultilinearKzgParam::<Bn256>::read_custom(&mut reader);
+        let params_from_setup = gen_param::<_, Pcs, Keccak256Transcript<_>>(11);
+
+        assert_eq!(params_from_file.g1(), params_from_setup.g1());
+        assert_eq!(params_from_file.eqs().len(), params_from_setup.eqs().len());
+        assert_eq!(params_from_file.g2(), params_from_setup.g2());
+        assert_eq!(params_from_file.ss().len(), params_from_setup.ss().len());
+    }
 
     #[test]
     fn commit_open_verify() {
