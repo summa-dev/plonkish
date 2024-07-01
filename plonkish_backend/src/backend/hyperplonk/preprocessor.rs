@@ -133,7 +133,7 @@ pub(crate) fn compose<F: PrimeField>(
 
         //Separate "nonzero" constraints that only contain a single term of a polynomial, e.g., "p_2_0",
         //and don't contain any arithmetic operations, e.g., "+", "-", "*"
-        let (valid_constraints, mut nonzero_constraints): (
+        let (identity_expressions, nonzero_expressions): (
             Vec<&Expression<F>>,
             Vec<&Expression<F>>,
         ) = constraints
@@ -149,21 +149,42 @@ pub(crate) fn compose<F: PrimeField>(
                 }
                 (valid, non_zero)
             });
+        /*
+        Only one nonzero constraint is allowed in the circuit to prevent a potential "rebalance" attack
+        in the context of proof of solvency (PoS) and sumcheck protocol. The nonzero constraint in PoS
+        is meant to check that the sum of all the liability balances is equal to the total that is supposed
+        to be assigned as a negative value in the same column. For example, consider the following table:
+        | creditor id | liability amount |
+        | 1           |  100             |
+        | 2           |  200             |
+        | 3           |  300             |
+        | total       | -600             |
+        If there are multiple nonzero constraints, the prover can potentially "rebalance" the totals
+        by increasing the value in one column and decreasing the value in another column, while satisfying
+        the zero check of the entire two columns:
+        | creditor id | liability 1 amount | liability 2 amount |
+        | 1           |  100               | 400                |
+        | 2           |  200               | 500                |
+        | 3           |  300               | 700                |
+        | total       | -500               | -1700              |
+        */
+        assert!(
+            nonzero_expressions.len() <= 1,
+            "Only one non-zero constraint is allowed in the circuit. Found {}.",
+            nonzero_expressions.len()
+        );
         // For compatibility with distribute_power there should be at least one expression
         let zero_expression = Expression::zero();
-        if nonzero_constraints.is_empty() {
-            nonzero_constraints.push(&zero_expression);
-        }
+        let nonzero_expression = if nonzero_expressions.is_empty() {
+            zero_expression.clone()
+        } else {
+            nonzero_expressions[0].clone()
+        };
 
         let eq = Expression::eq_xy(0);
 
-        let nonzero_expression = if nonzero_constraints.len() > 1 {
-            nonzero_constraints.into_iter().sum::<Expression<_>>()
-        } else {
-            nonzero_constraints[0].clone()
-        };
-
-        let zero_check_on_every_row = Expression::distribute_powers(valid_constraints, alpha) * eq;
+        let zero_check_on_every_row =
+            Expression::distribute_powers(identity_expressions, alpha) * eq;
         Expression::distribute_powers(
             chain![
                 [&nonzero_expression],
