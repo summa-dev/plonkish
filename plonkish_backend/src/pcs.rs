@@ -178,7 +178,7 @@ mod test {
     use rand::{rngs::OsRng, Rng};
     use std::iter;
 
-    pub(super) fn gen_param<F, Pcs, T>(k: usize) -> Pcs::Param
+    pub(super) fn gen_param<F, Pcs, T>(k: usize, batch_size: usize) -> Pcs::Param
     where
         F: PrimeField,
         Pcs: PolynomialCommitmentScheme<F>,
@@ -188,7 +188,7 @@ mod test {
     {
         let mut rng = OsRng;
         let poly_size = 1 << k;
-        Pcs::setup(poly_size, 1, &mut rng).unwrap()
+        Pcs::setup(poly_size, batch_size, &mut rng).unwrap()
     }
 
     pub(super) fn run_commit_open_verify<F, Pcs, T>()
@@ -203,7 +203,7 @@ mod test {
             // Setup
             let (pp, vp) = {
                 let poly_size = 1 << k;
-                let param = gen_param::<F, Pcs, T>(k);
+                let param = gen_param::<F, Pcs, T>(k, 1);
                 Pcs::trim(&param, poly_size, 1).unwrap()
             };
             // Commit and open
@@ -247,7 +247,7 @@ mod test {
             // Setup
             let (pp, vp) = {
                 let poly_size = 1 << k;
-                let param = gen_param::<F, Pcs, T>(k);
+                let param = gen_param::<F, Pcs, T>(k, batch_size);
                 Pcs::trim(&param, poly_size, batch_size).unwrap()
             };
             // Batch commit and open

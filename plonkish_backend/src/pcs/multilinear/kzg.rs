@@ -425,7 +425,7 @@ mod test {
         let mut reader = std::fs::File::open("../ptau/hermez-raw-extended-11").unwrap();
 
         let params_from_file = MultilinearKzgParam::<Bn256>::read_custom(&mut reader);
-        let params_from_setup = gen_param::<_, Pcs, Keccak256Transcript<_>>(11);
+        let params_from_setup = gen_param::<_, Pcs, Keccak256Transcript<_>>(11, 1);
 
         assert_eq!(params_from_file.g1(), params_from_setup.g1());
         assert_eq!(params_from_file.eqs().len(), params_from_setup.eqs().len());
