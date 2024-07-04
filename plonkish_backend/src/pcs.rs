@@ -34,6 +34,8 @@ pub trait PolynomialCommitmentScheme<F: Field>: Clone + Debug {
 
     fn setup(poly_size: usize, batch_size: usize, rng: impl RngCore) -> Result<Self::Param, Error>;
 
+    fn setup_custom(_filename: &str) -> Result<Self::Param, Error>;
+
     fn trim(
         param: &Self::Param,
         poly_size: usize,

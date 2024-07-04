@@ -86,12 +86,7 @@ impl<M: MultiMillerLoop> MultilinearKzgParam<M> {
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
 
-        Self {
-            g1,
-            eqs,
-            g2,
-            ss,
-        }
+        Self { g1, eqs, g2, ss }
     }
 }
 
@@ -194,8 +189,8 @@ impl<M> PolynomialCommitmentScheme<M::Scalar> for MultilinearKzg<M>
 where
     M: MultiMillerLoop,
     M::Scalar: Serialize + DeserializeOwned,
-    M::G1Affine: Serialize + DeserializeOwned,
-    M::G2Affine: Serialize + DeserializeOwned,
+    M::G1Affine: Serialize + DeserializeOwned + SerdeObject,
+    M::G2Affine: Serialize + DeserializeOwned + SerdeObject,
 {
     type Param = MultilinearKzgParam<M>;
     type ProverParam = MultilinearKzgProverParam<M>;
@@ -256,7 +251,13 @@ where
             batch_projective_to_affine(&fixed_base_msm(window_size, &window_table, &ss))
         };
 
-       Ok(Self::Param { g1, eqs, g2, ss })
+        Ok(Self::Param { g1, eqs, g2, ss })
+    }
+
+    fn setup_custom(filename: &str) -> Result<Self::Param, Error> {
+        Ok(Self::Param::read_custom(
+            &mut std::fs::File::open(filename).unwrap(),
+        ))
     }
 
     fn trim(
@@ -409,7 +410,7 @@ mod test {
     use crate::{
         pcs::{
             multilinear::kzg::MultilinearKzg,
-            test::{run_batch_commit_open_verify, run_commit_open_verify, gen_param},
+            test::{gen_param, run_batch_commit_open_verify, run_commit_open_verify},
         },
         util::transcript::Keccak256Transcript,
     };
