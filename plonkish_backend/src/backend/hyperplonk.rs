@@ -97,8 +97,8 @@ where
         Pcs::setup(poly_size, batch_size, rng)
     }
 
-    fn setup_custom(_filename: &str) -> Result<Pcs::Param, Error> {
-        unimplemented!("HyperPlonk does not support custom setup")
+    fn setup_custom(filename: &str) -> Result<Pcs::Param, Error> {
+        Pcs::setup_custom(filename)
     }
 
     fn preprocess(
