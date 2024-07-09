@@ -62,7 +62,8 @@ impl<M: MultiMillerLoop> MultilinearKzgParam<M> {
 
         let k = u32::from_le_bytes(k);
 
-        let g1 = M::G1Affine::generator();
+        let g1 = M::G1Affine::read_raw(reader).unwrap();
+        assert_eq!(g1, M::G1Affine::generator(), "Invalid G1 group generator point");
 
         let eqs = {
             // first g1[0] is generator point
@@ -79,7 +80,10 @@ impl<M: MultiMillerLoop> MultilinearKzgParam<M> {
                 .collect_vec()
         };
 
-        let g2 = M::G2Affine::read_raw(reader).unwrap();
+        // skipping partial g2 point
+        M::G1Affine::read_raw(reader).unwrap();
+
+        let g2 = M::G2Affine::generator();
 
         let ss = (0..k)
             .map(|_| M::G2Affine::read_raw(reader))
