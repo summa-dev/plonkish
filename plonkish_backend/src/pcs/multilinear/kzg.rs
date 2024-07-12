@@ -430,7 +430,7 @@ mod test {
 
     #[test]
     fn setup_custom() {
-        // `hermez-raw-hyperplonk-11` is generated from https://github.com/sifnoc/halo2-kzg-srs
+        // `hermez-raw-hyperplonk-11` is generated from `bin/hyperplonk_srs_generator.rs`
         let mut reader = std::fs::File::open("ptau/hermez-raw-hyperplonk-11").unwrap();
 
         let params_from_file = MultilinearKzgParam::<Bn256>::read_custom(&mut reader);
