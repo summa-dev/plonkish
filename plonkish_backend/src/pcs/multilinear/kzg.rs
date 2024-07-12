@@ -63,7 +63,11 @@ impl<M: MultiMillerLoop> MultilinearKzgParam<M> {
         let k = u32::from_le_bytes(k);
 
         let g1 = M::G1Affine::read_raw(reader).unwrap();
-        assert_eq!(g1, M::G1Affine::generator(), "Invalid G1 group generator point");
+        assert_eq!(
+            g1,
+            M::G1Affine::generator(),
+            "Invalid G1 group generator point"
+        );
 
         let eqs = {
             // first g1[0] is generator point
@@ -426,8 +430,8 @@ mod test {
 
     #[test]
     fn setup_custom() {
-        // `hermez-raw-extended-11` is generated from https://github.com/sifnoc/halo2-kzg-srs
-        let mut reader = std::fs::File::open("../ptau/hermez-raw-extended-11").unwrap();
+        // `hermez-raw-hyperplonk-11` is generated from https://github.com/sifnoc/halo2-kzg-srs
+        let mut reader = std::fs::File::open("ptau/hermez-raw-hyperplonk-11").unwrap();
 
         let params_from_file = MultilinearKzgParam::<Bn256>::read_custom(&mut reader);
         let params_from_setup = gen_param::<_, Pcs, Keccak256Transcript<_>>(11, 1);
