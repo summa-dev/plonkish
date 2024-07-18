@@ -130,10 +130,67 @@ pub(crate) fn compose<F: PrimeField>(
             permutation_constraints.iter(),
         ]
         .collect_vec();
+
+        //Separate "nonzero" constraints that only contain a single term of a polynomial, e.g., "p_2_0",
+        //and don't contain any arithmetic operations, e.g., "+", "-", "*"
+        let (identity_expressions, nonzero_expressions): (
+            Vec<&Expression<F>>,
+            Vec<&Expression<F>>,
+        ) = constraints
+            .iter()
+            .fold((vec![], vec![]), |(mut valid, mut non_zero), expr| {
+                if expr.identifier().contains('+')
+                    || expr.identifier().contains('-')
+                    || expr.identifier().contains('*')
+                {
+                    valid.push(expr);
+                } else {
+                    non_zero.push(expr);
+                }
+                (valid, non_zero)
+            });
+        /*
+        Only one nonzero constraint is allowed in the circuit to prevent a potential "rebalance" attack
+        in the context of proof of solvency (PoS) and sumcheck protocol. The nonzero constraint in PoS
+        is meant to check that the sum of all the liability balances is equal to the total that is supposed
+        to be assigned as a negative value in the same column. For example, consider the following table:
+        | creditor id | liability amount |
+        | 1           |  100             |
+        | 2           |  200             |
+        | 3           |  300             |
+        | total       | -600             |
+        If there are multiple nonzero constraints, the prover can potentially "rebalance" the totals
+        by increasing the value in one column and decreasing the value in another column, while satisfying
+        the zero check of the entire two columns:
+        | creditor id | liability 1 amount | liability 2 amount |
+        | 1           |  100               | 400                |
+        | 2           |  200               | 500                |
+        | 3           |  300               | 700                |
+        | total       | -500               | -1700              |
+        */
+        assert!(
+            nonzero_expressions.len() <= 1,
+            "Only one non-zero constraint is allowed in the circuit. Found {}.",
+            nonzero_expressions.len()
+        );
+        // For compatibility with distribute_power there should be at least one expression
+        let zero_expression = Expression::zero();
+        let nonzero_expression = if nonzero_expressions.is_empty() {
+            zero_expression.clone()
+        } else {
+            nonzero_expressions[0].clone()
+        };
+
         let eq = Expression::eq_xy(0);
-        let zero_check_on_every_row = Expression::distribute_powers(constraints, alpha) * eq;
+
+        let zero_check_on_every_row =
+            Expression::distribute_powers(identity_expressions, alpha) * eq;
         Expression::distribute_powers(
-            chain![lookup_zero_checks.iter(), [&zero_check_on_every_row]],
+            chain![
+                [&nonzero_expression],
+                lookup_zero_checks.iter(),
+                [&zero_check_on_every_row]
+            ],
             alpha,
         )
     };
