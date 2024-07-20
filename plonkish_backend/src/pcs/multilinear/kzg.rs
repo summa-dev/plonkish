@@ -430,8 +430,8 @@ mod test {
 
     #[test]
     fn setup_custom() {
-        // `hermez-raw-hyperplonk-11` is generated from `bin/hyperplonk_srs_generator.rs`
-        let mut reader = std::fs::File::open("ptau/hermez-raw-hyperplonk-11").unwrap();
+        // `hyperplonk-srs-11` is generated from `bin/hyperplonk_srs_generator.rs`
+        let mut reader = std::fs::File::open("ptau/hyperplonk-srs-11").unwrap();
 
         let params_from_file = MultilinearKzgParam::<Bn256>::read_custom(&mut reader);
         let params_from_setup = gen_param::<_, Pcs, Keccak256Transcript<_>>(11, 1);
