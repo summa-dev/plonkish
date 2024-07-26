@@ -34,6 +34,8 @@ pub trait PolynomialCommitmentScheme<F: Field>: Clone + Debug {
 
     fn setup(poly_size: usize, batch_size: usize, rng: impl RngCore) -> Result<Self::Param, Error>;
 
+    fn setup_custom(_filename: &str) -> Result<Self::Param, Error>;
+
     fn trim(
         param: &Self::Param,
         poly_size: usize,
@@ -178,6 +180,19 @@ mod test {
     use rand::{rngs::OsRng, Rng};
     use std::iter;
 
+    pub(super) fn gen_param<F, Pcs, T>(k: usize, batch_size: usize) -> Pcs::Param
+    where
+        F: PrimeField,
+        Pcs: PolynomialCommitmentScheme<F>,
+        T: TranscriptRead<Pcs::CommitmentChunk, F>
+            + TranscriptWrite<Pcs::CommitmentChunk, F>
+            + InMemoryTranscript<Param = ()>,
+    {
+        let mut rng = OsRng;
+        let poly_size = 1 << k;
+        Pcs::setup(poly_size, batch_size, &mut rng).unwrap()
+    }
+
     pub(super) fn run_commit_open_verify<F, Pcs, T>()
     where
         F: PrimeField,
@@ -189,9 +204,8 @@ mod test {
         for k in 3..16 {
             // Setup
             let (pp, vp) = {
-                let mut rng = OsRng;
                 let poly_size = 1 << k;
-                let param = Pcs::setup(poly_size, 1, &mut rng).unwrap();
+                let param = gen_param::<F, Pcs, T>(k, 1);
                 Pcs::trim(&param, poly_size, 1).unwrap()
             };
             // Commit and open
@@ -235,7 +249,7 @@ mod test {
             // Setup
             let (pp, vp) = {
                 let poly_size = 1 << k;
-                let param = Pcs::setup(poly_size, batch_size, &mut rng).unwrap();
+                let param = gen_param::<F, Pcs, T>(k, batch_size);
                 Pcs::trim(&param, poly_size, batch_size).unwrap()
             };
             // Batch commit and open

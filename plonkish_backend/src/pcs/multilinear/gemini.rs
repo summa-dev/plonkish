@@ -44,6 +44,10 @@ where
         UnivariateKzg::<M>::setup(poly_size, batch_size, rng)
     }
 
+    fn setup_custom(_filename: &str) -> Result<Self::Param, Error> {
+        unimplemented!("Gemini does not support custom setup")
+    }
+
     fn trim(
         param: &Self::Param,
         poly_size: usize,

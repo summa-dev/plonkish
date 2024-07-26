@@ -97,6 +97,10 @@ where
         Pcs::setup(poly_size, batch_size, rng)
     }
 
+    fn setup_custom(filename: &str) -> Result<Pcs::Param, Error> {
+        Pcs::setup_custom(filename)
+    }
+
     fn preprocess(
         param: &Pcs::Param,
         circuit_info: &PlonkishCircuitInfo<F>,

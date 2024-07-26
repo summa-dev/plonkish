@@ -115,6 +115,10 @@ where
         Ok(Self::Param { num_vars, g, h })
     }
 
+    fn setup_custom(_filename: &str) -> Result<Self::Param, Error> {
+        unimplemented!("MultilinearIpa does not support custom setup")
+    }
+
     fn trim(
         param: &Self::Param,
         poly_size: usize,

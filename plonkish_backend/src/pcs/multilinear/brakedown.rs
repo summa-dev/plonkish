@@ -110,6 +110,10 @@ where
         })
     }
 
+    fn setup_custom(_filename: &str) -> Result<Self::Param, Error> {
+        unimplemented!("MultilinearBrakedown does not support custom setup")
+    }
+
     fn trim(
         param: &Self::Param,
         poly_size: usize,

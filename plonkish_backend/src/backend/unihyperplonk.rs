@@ -101,6 +101,10 @@ where
         Pcs::setup(poly_size, batch_size, rng)
     }
 
+    fn setup_custom(_filename: &str) -> Result<Pcs::Param, Error> {
+        unimplemented!("UniHyperPlonk does not support custom setup")
+    }
+
     fn preprocess(
         param: &Pcs::Param,
         circuit_info: &PlonkishCircuitInfo<F>,
